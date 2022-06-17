@@ -1,3 +1,5 @@
+let _ = require('underscore');
+
 /*************************************************************
 
 You should implement your request handler function in this file.
@@ -64,9 +66,10 @@ var requestHandler = function(request, response) {
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
   // response.end('Hello, World!!! Edited');
-
-
-  if (request.method === 'GET' && request.url === '/classes/messages') {
+  if (request.method === 'OPTIONS' && request.url === '/classes/messages') {
+    response.writeHead(200, headers);
+    response.end();
+  } else if (request.method === 'GET' && request.url === '/classes/messages') {
     response.writeHead(200, headers);
     response.end(JSON.stringify(messageArray));
   } else if (request.method === 'POST' && request.url === '/classes/messages') {
@@ -77,11 +80,13 @@ var requestHandler = function(request, response) {
     });
     request.on('end', () => {
       let parsedObject = JSON.parse(addedData);
+      let messageId = {'message_id': counter};
+      _.extend(parsedObject, messageId);
       if (typeof parsedObject === 'object') {
-        messageArray.push(JSON.parse(addedData));
+        messageArray.push(parsedObject);
+        console.log(messageArray);
       }
-      let uniqueArray = JSON.stringify([{'message_id': counter}]);
-      response.end(uniqueArray);
+      response.end(JSON.stringify([messageId]));
       counter++;
     });
   } else {

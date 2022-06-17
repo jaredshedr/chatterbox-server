@@ -121,4 +121,17 @@ describe('Node Server Request Listener Function', function() {
     expect(messages.length).to.equal(2);
     expect(res._ended).to.equal(true);
   });
+
+  it('Should alter GET requests to add message_id', function() {
+    req = new stubs.request('/classes/messages', 'GET');
+    res = new stubs.response();
+
+    handler.requestHandler(req, res);
+
+    expect(res._responseCode).to.equal(200);
+    var messages = JSON.parse(res._data);
+    expect(messages.length).to.be.above(0);
+    expect(messages[0].message_id).to.equal(0);
+    expect(res._ended).to.equal(true);
+  });
 });
