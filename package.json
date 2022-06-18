@@ -12,15 +12,18 @@
     "chai": "^4.2.0",
     "jquery": "^3.5.1",
     "mocha": "^5.2.0",
+    "nodemon": "^2.0.16",
     "sinon": "^6.3.5",
-    "underscore": "^1.11.0"
+    "underscore": "^1.13.4",
+    "uuid": "^8.3.2"
   },
   "scripts": {
     "postinstall": "curl -s https://raw.githubusercontent.com/reactorcore/pomander/master/bin/install | bash",
     "start:server": "node server/basic-server.js",
     "start:client": "npx live-server",
     "test": "mocha server/spec",
-    "lint": "eslint ./"
+    "lint": "eslint ./",
+    "nodemon": "./node_modules/.bin/nodemon ./server/basic-server.js"
   },
   "devDependencies": {
     "chai": "^4.2.0",

@@ -1,4 +1,6 @@
 let _ = require('underscore');
+const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
 
 /*************************************************************
 
@@ -23,7 +25,19 @@ var defaultCorsHeaders = {
 
 let messageArray = [];
 
-let counter = 0;
+const fileName = './server/database/messages.txt';
+
+async function readMessageChunk(readable) {
+  // parse result and store in messageArray
+  for await (const chunk of readable) {
+    // console.log('chunk is:', chunk);
+    messageArray = JSON.parse(chunk);
+  }
+}
+
+const readable = fs.createReadStream(
+  fileName, {encoding: 'utf8'});
+readMessageChunk(readable);
 
 var requestHandler = function(request, response) {
   // Request and Response come from node's http module.
@@ -54,6 +68,9 @@ var requestHandler = function(request, response) {
   // other than plain text, like JSON or HTML.
   headers['Content-Type'] = 'application/json';
 
+
+  let method = request.method;
+  let url = request.url;
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
   // response.writeHead(statusCode, headers);
@@ -66,34 +83,64 @@ var requestHandler = function(request, response) {
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
   // response.end('Hello, World!!! Edited');
-  if (request.method === 'OPTIONS' && request.url === '/classes/messages') {
-    response.writeHead(200, headers);
-    response.end();
-  } else if (request.method === 'GET' && request.url === '/classes/messages') {
-    response.writeHead(200, headers);
-    response.end(JSON.stringify(messageArray));
-  } else if (request.method === 'POST' && request.url === '/classes/messages') {
-    response.writeHead(201, headers);
-    let addedData = '';
-    request.on('data', chunk => {
-      addedData += chunk;
-    });
-    request.on('end', () => {
-      let parsedObject = JSON.parse(addedData);
-      let messageId = {'message_id': counter};
-      _.extend(parsedObject, messageId);
-      if (typeof parsedObject === 'object') {
-        messageArray.push(parsedObject);
-        console.log(messageArray);
+
+
+
+  // var data = fs.readFileSync(fileName, 'utf8');
+  // if (data) {
+  //   messageArray = (JSON.parse(data));
+  // }
+
+  let rewriteFile = function () {
+    fs.writeFile(fileName, JSON.stringify(messageArray), err2 => {
+      if (err2) {
+        console.log(err2);
+        return;
       }
-      response.end(JSON.stringify([messageId]));
-      counter++;
     });
+  };
+
+
+  var setResponse = (response, statusCode, data) => {
+    response.writeHead(statusCode, headers);
+    data ? response.end(JSON.stringify(data)) : response.end();
+  };
+
+  if (url === '/classes/messages') {
+
+    if (method === 'OPTIONS') {
+      setResponse(response, 200);
+    } else if (method === 'GET') {
+      // response.writeHead(statusCode, headers);
+      // const stream = fs.createReadStream(fileName);
+      // stream.pipe(response);
+      // console.log(messageArray);
+      setResponse(response, 200, messageArray);
+    } else if (method === 'POST') {
+      let addedData = '';
+      request.on('data', chunk => {
+        addedData += chunk;
+      });
+      request.on('end', () => {
+        let parsedObject = JSON.parse(addedData);
+        let additionalInfo = {'message_id': uuidv4(), 'time_stamp': new Date()};
+        _.extend(parsedObject, additionalInfo);
+        if (typeof parsedObject === 'object') {
+          messageArray.push(parsedObject);
+        }
+        setResponse(response, 201, [additionalInfo]);
+        rewriteFile();
+      });
+    } else {
+      setResponse(response, 404);
+    }
   } else {
-    response.writeHead(404, headers);
-    response.end();
+    setResponse(response, 404);
   }
+
 };
+
+
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
 // This code allows this server to talk to websites that

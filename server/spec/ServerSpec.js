@@ -48,10 +48,7 @@ describe('Node Server Request Listener Function', function() {
 
     // Expect 201 Created response status
     expect(res._responseCode).to.equal(201);
-
-    // Testing for a newline isn't a valid test
-    // TODO: Replace with with a valid test
-    // expect(res._data).to.equal(JSON.stringify('\n'));
+    expect(typeof JSON.parse(res._data)[0]).to.equal('object');
     expect(res._ended).to.equal(true);
   });
 
@@ -134,4 +131,33 @@ describe('Node Server Request Listener Function', function() {
     expect(messages[0].message_id).to.equal(0);
     expect(res._ended).to.equal(true);
   });
+
+  it('Should alter GET requests to include time_stamp property', function() {
+    req = new stubs.request('/classes/messages', 'GET');
+    res = new stubs.response();
+
+    handler.requestHandler(req, res);
+
+    expect(res._responseCode).to.equal(200);
+    var messages = JSON.parse(res._data);
+    expect(messages.length).to.be.above(0);
+    expect(typeof messages[0].time_stamp).to.equal('string');
+    expect(res._ended).to.equal(true);
+  });
+
+  it('Should have unique message_id', function() {
+    req = new stubs.request('/classes/messages', 'GET');
+    res = new stubs.response();
+
+    handler.requestHandler(req, res);
+
+    expect(res._responseCode).to.equal(200);
+    var messages = JSON.parse(res._data);
+
+    expect(messages[0].message_id).to.equal(0);
+    expect(messages[1].message_id).to.equal(1);
+    expect(res._ended).to.equal(true);
+  });
+
+
 });
